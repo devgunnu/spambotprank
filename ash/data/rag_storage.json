@@ -1,0 +1,79 @@
+{
+  "documents": [
+    {
+      "id": 0,
+      "title": "Suspect Info 1 - +15551234567",
+      "content": "Caller +15551234567 repeatedly calls about fake lottery winnings",
+      "category": "suspects",
+      "metadata": {
+        "phone_number": "+15551234567",
+        "source": "user_reports"
+      },
+      "timestamp": 1758437488.2150476
+    },
+    {
+      "id": 1,
+      "title": "Suspect Info 2 - +15551234567",
+      "content": "Reports indicate this number is associated with IRS scam calls",
+      "category": "suspects",
+      "metadata": {
+        "phone_number": "+15551234567",
+        "source": "user_reports"
+      },
+      "timestamp": 1758437488.219108
+    },
+    {
+      "id": 2,
+      "title": "User Info 1 - user123",
+      "content": "User prefers to block unknown callers",
+      "category": "user_information",
+      "metadata": {
+        "user_id": "user123",
+        "source": "user_profile"
+      },
+      "timestamp": 1758437494.4414182
+    },
+    {
+      "id": 3,
+      "title": "User Info 2 - user123",
+      "content": "User reports receiving 3+ spam calls daily",
+      "category": "user_information",
+      "metadata": {
+        "user_id": "user123",
+        "source": "user_profile"
+      },
+      "timestamp": 1758437494.443935
+    },
+    {
+      "id": 4,
+      "title": "User Info 3 - user123",
+      "content": "User is elderly and vulnerable to scams",
+      "category": "user_information",
+      "metadata": {
+        "user_id": "user123",
+        "source": "user_profile"
+      },
+      "timestamp": 1758437494.4453533
+    },
+    {
+      "id": 5,
+      "title": "Suspect Info 1",
+      "content": "Test suspect info",
+      "category": "suspects",
+      "metadata": {
+        "phone": "+15551234567"
+      },
+      "timestamp": 1758437932.3162484
+    },
+    {
+      "id": 6,
+      "title": "Suspect Info 1",
+      "content": "Test suspect info",
+      "category": "suspects",
+      "metadata": {
+        "phone": "+15551234567"
+      },
+      "timestamp": 1758437960.973843
+    }
+  ]
+}
