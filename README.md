@@ -1,30 +1,31 @@
-Decoy - Fooling scammers, so you don't have to 
+Decoy – Fooling scammers, so you don’t have to
 
-Decoy flips the script on scams: instead of just blocking calls, it wastes scammers’ time while protecting and educating users worldwide.
+Decoy flips the script on scams. Instead of just blocking calls, it wastes scammers’ time while protecting and educating users worldwide.
 
 🚀 Features
 
-AI-Powered Random Personalities: 4 different time-wasting personalities that are randomly selected per call
+AI-Powered Random Personalities: 4 time-wasting personas randomly assigned per call
 
-Natural Voice AI: Uses Vapi with 11labs voice for realistic conversations
+Natural Voice AI: Realistic conversations using Vapi with 11labs voices
 
-Real-time Call Handling: Automatic call answering and conversation management via Twilio
+Real-time Call Handling: Automatic answering and conversation management via Twilio
 
-Analytics Dashboard: Track calls, duration, and effectiveness of different personas
+Analytics Dashboard: Track calls, durations, and persona effectiveness
 
-Database Storage: SQLite database for call logs and analytics
+Database Storage: SQLite for call logs and analytics
 
-Random Personality Per Call: Each call gets a random personality that stays consistent throughout
+Random Personality Per Call: Each call keeps a consistent personality throughout
 
 📋 Prerequisites
 
 Python 3.8+
 
-Twilio Account with Voice capabilities
+Twilio account with Voice capabilities
 
 Vapi API key
 
-ngrok (for local development webhooks)
+ngrok
+ (for local development webhooks)
 
 🛠️ Installation
 
@@ -40,7 +41,7 @@ pip install -r requirements.txt
 
 
 Set up environment variables
-Create a .env file in the root directory:
+Create a .env file in the project root:
 
 TWILIO_ACCOUNT_SID=your_twilio_account_sid_here
 TWILIO_AUTH_TOKEN=your_twilio_auth_token_here
@@ -56,9 +57,11 @@ Register your Twilio phone number with Vapi
 
 Assign the "Random Personality Per Call" assistant
 
-Configure Twilio webhook to point to Vapi: https://api.vapi.ai/twilio/inbound_call
+Configure Twilio webhook to point to Vapi:
 
-🚀 Running the Application
+https://api.vapi.ai/twilio/inbound_call
+
+▶️ Running the Application
 
 Start the FastAPI server
 
@@ -66,113 +69,107 @@ python run.py
 
 
 Access the dashboard
-Open your browser and go to: http://localhost:8000
+Open your browser: http://localhost:8000
 
 Test the system
-Call your Twilio phone number to test Decoy in action!
+Call your Twilio number to see Decoy in action!
 
 📊 Dashboard Features
 
-Real-time Analytics: View calls today, average duration, and time wasted
+Real-time Analytics: Calls today, average duration, total time wasted
 
 Call History: Browse recent calls with details
 
-Persona Effectiveness: See which personas are most effective
+Persona Effectiveness: See which personas waste the most scammer time
 
-System Status: Monitor application health
+System Status: Monitor health of the app
 
 Call Details: View full conversation transcripts
 
-🎭 Available Personalities (Random Per Call)
+🎭 Available Personalities
 
-Chatty Neighbor: Very talkative, loves sharing stories about neighbors and local events
+Chatty Neighbor – Talkative, loves sharing stories about local events
 
-Confused Elderly: Slightly forgetful, needs things repeated, asks for clarification constantly
+Confused Elderly – Forgetful, repeats questions, asks for clarification
 
-Overly Enthusiastic: Extremely excited about everything, asks lots of questions with high energy
+Overly Enthusiastic – Excited about everything, asks endless questions
 
-Distracted Parent: Constantly multitasking, talks about children and family activities
+Distracted Parent – Always multitasking, mentions children and chores
 
 🔧 API Endpoints
 
-GET / - Dashboard interface
+GET / – Dashboard interface
 
-GET /health - Health check
+GET /health – Health check
 
-POST /webhook/voice - Twilio voice webhook
+POST /webhook/voice – Twilio voice webhook
 
-POST /webhook/speech - Twilio speech recognition webhook
+POST /webhook/speech – Twilio speech recognition webhook
 
-POST /webhook/status - Twilio call status webhook
+POST /webhook/status – Twilio call status webhook
 
-GET /api/analytics/summary - Analytics summary
+GET /api/analytics/summary – Analytics summary
 
-GET /api/calls - Recent calls list
+GET /api/calls – Recent calls list
 
-GET /api/calls/{call_id} - Specific call details
+GET /api/calls/{call_id} – Specific call details
 
 🗄️ Database Schema
 
-calls: Stores call information (duration, persona, status)
+calls: Call information (duration, persona, status)
 
-conversations: Stores individual conversation exchanges
+conversations: Individual conversation exchanges
 
-analytics: Stores aggregated analytics data
+analytics: Aggregated analytics data
 
 🚨 Important Notes
 
-Legal Compliance: Ensure you comply with local laws regarding call recording and automated systems
+Ensure compliance with local laws for call recording and automation
 
-Rate Limiting: Be mindful of API rate limits for Twilio and Vapi
+Be mindful of Twilio and Vapi rate limits
 
-Cost Management: Monitor usage to avoid unexpected charges
+Monitor usage to control costs
 
-Privacy: Consider data retention policies for call logs
+Apply proper data retention policies for logs
 
 🛡️ Security Considerations
 
-Keep API keys secure and never commit them to version control
+Keep API keys out of version control
 
 Use HTTPS in production
 
-Implement proper authentication for the dashboard
+Add authentication to the dashboard
 
-Consider data encryption for sensitive information
+Encrypt sensitive data when needed
 
 🐛 Troubleshooting
 
-Calls not being answered: Check Vapi phone number registration and Twilio webhook configuration
+Calls not being answered → Check Twilio webhook setup and Vapi registration
 
-Voice not working: Verify Vapi assistant configuration and voice settings
+No voice output → Verify Vapi assistant configuration and voice settings
 
-AI responses not working: Check Vapi API key and assistant configuration
+AI responses missing → Confirm Vapi API key and assistant mapping
 
-Database errors: Ensure SQLite file permissions are correct
+Database errors → Check SQLite file permissions
 
 📈 Future Enhancements
 
-Add more sophisticated personalities
+More advanced personalities
 
-Implement call recording and playback
+Call recording and playback
 
-Add machine learning for personality selection
+Smarter persona selection via ML
 
-Create mobile app interface
+Mobile app interface
 
-Add real-time notifications
+Real-time notifications
 
-Implement call scheduling and automation
+Scheduled or automated calls
 
 📄 License
 
-This project is for educational and entertainment purposes. Please use responsibly and in compliance with applicable laws.
+This project is for educational and entertainment purposes. Use responsibly and in compliance with applicable laws.
 
 ✨ Decoy – fooling scammers, so you don’t have to.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit issues and enhancement requests.
-
----
 
 **Disclaimer**: This tool is designed to waste spam callers' time and should only be used for legitimate purposes. Always comply with local laws and regulations regarding automated phone systems.
