@@ -36,6 +36,33 @@ templates = Jinja2Templates(directory="static")
 twilio_handler = TwilioHandler()
 server_communicator = ServerCommunicator()
 
+# Simple file-based storage for call purposes (for Vapi to access)
+import json
+import os
+from pathlib import Path
+
+CALL_PURPOSES_FILE = Path("call_purposes.json")
+
+def load_call_purposes():
+    """Load call purposes from file"""
+    if CALL_PURPOSES_FILE.exists():
+        try:
+            with open(CALL_PURPOSES_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_call_purposes(purposes):
+    """Save call purposes to file"""
+    try:
+        with open(CALL_PURPOSES_FILE, 'w') as f:
+            json.dump(purposes, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to save call purposes: {e}")
+
+call_purposes = load_call_purposes()
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "spam-detection-gateway"}
@@ -55,10 +82,9 @@ async def handle_incoming_call(request: Request):
     # Layer 1: Basic call number scan
     layer1_result = await server_communicator.layer1_spam_check(from_number, to_number, form_data)
     
-    # If Layer 1 has high confidence it's spam, reject immediately
-    if (layer1_result.get('is_spam', False) and 
-        layer1_result.get('confidence', 0.0) > 0.9):
-        logger.info(f"🚨 Layer 1 HIGH CONFIDENCE SPAM: {from_number} (confidence: {layer1_result.get('confidence', 0.0)})")
+    # Layer 1 returns binary results: confidence is 1.0 if spam, 0.0 if not
+    if layer1_result.get('is_spam', False):
+        logger.info(f"🚨 Layer 1 SPAM DETECTED: {from_number} - Known spam number in database")
         twiml_response = twilio_handler.reject_call("Known spam number")
         return PlainTextResponse(content=twiml_response, media_type="text/xml")
     
@@ -66,125 +92,149 @@ async def handle_incoming_call(request: Request):
     layer2_result = await server_communicator.layer2_ml_check(from_number, to_number, form_data)
     
     # Calculate combined confidence from both layers
-    layer1_conf = layer1_result.get('confidence', 0.0) if layer1_result.get('is_spam', False) else 0.0
+    # Layer 1: Binary (passed if we reach here, so confidence = 0.0)
+    # Layer 2: Stochastic confidence (0.0-1.0 range from ML model)
+    layer1_conf = 0.0  # Layer 1 passed (not spam), so confidence is 0
     layer2_conf = layer2_result.get('confidence', 0.0) if layer2_result.get('is_spam', False) else 0.0
-    combined_confidence = max(layer1_conf, layer2_conf)
     
-    logger.info(f"🔍 Analysis complete - L1: {layer1_conf:.2f}, L2: {layer2_conf:.2f}, Combined: {combined_confidence:.2f}")
+    # For routing decision, we primarily use Layer 2's ML confidence
+    spam_confidence = layer2_conf
+    
+    logger.info(f"🔍 Analysis complete - L1: passed (not in spam DB), L2: {layer2_conf:.2f}, Spam confidence: {spam_confidence:.2f}")
+    
+    # Note: Insurance keyword detection happens in analyze-purpose endpoint
     
     # If 50%+ confidence that call is likely a scammer -> Detective Agent (VAPI)
-    if combined_confidence >= 0.5:
-        logger.info(f"🕵️ 50%+ spam confidence ({combined_confidence:.2f}) - Forwarding to Detective Agent (VAPI)")
+    if spam_confidence >= 0.5:
+        logger.info(f"🕵️ 50%+ spam confidence ({spam_confidence:.2f}) - Forwarding to Detective Agent (VAPI)")
         twiml_response = twilio_handler.forward_to_vapi(form_data)
         return PlainTextResponse(content=twiml_response, media_type="text/xml")
     
-    # Low confidence - likely legitimate call, reject politely
-    logger.info(f"✅ Low spam confidence ({combined_confidence:.2f}) - Likely legitimate call, forwarding normally")
+    # Low confidence - likely legitimate call, forward normally
+    logger.info(f"✅ Low spam confidence ({spam_confidence:.2f}) - Likely legitimate call, forwarding normally")
     twiml_response = twilio_handler.forward_call_normally(form_data)
     return PlainTextResponse(content=twiml_response, media_type="text/xml")
 
 
-@app.post("/webhook/voice-response")
-async def handle_voice_response(request: Request):
-    """Detective Agent - Handle suspected spam caller responses"""
+@app.post("/webhook/analyze-purpose")
+async def analyze_call_purpose_and_forward(request: Request):
+    """Analyze the caller's stated purpose and then forward to Vapi Detective Agent"""
     form_data = await request.form()
     
     # Extract speech result
     speech_result = form_data.get('SpeechResult', '')
     speech_confidence = form_data.get('SpeechConfidence', 0)
     from_number = form_data.get('From', '')
+    to_number = form_data.get('To', '+14806608282')
     
-    logger.info(f"🕵️ Detective Agent analyzing response from {from_number}: '{speech_result}' (confidence: {speech_confidence})")
+    logger.info(f"🎤 Purpose analysis from {from_number}: '{speech_result}' (confidence: {speech_confidence})")
     
-    # Analyze the caller's purpose using Layer 2 ML
+    # Analyze the caller's purpose using Layer 2 ML if we got a response
     if speech_result and len(speech_result.strip()) > 3:
-        to_number = form_data.get('To', '+14806608282')
-        
         # Enhanced Layer 2 analysis with speech content
         enhanced_form_data = dict(form_data)
         enhanced_form_data['SpeechResult'] = speech_result
         enhanced_form_data['SpeechConfidence'] = speech_confidence
         
         layer2_result = await server_communicator.layer2_ml_check(from_number, to_number, enhanced_form_data)
-        
         spam_confidence = layer2_result.get('confidence', 0.0) if layer2_result.get('is_spam', False) else 0.0
         
-        logger.info(f"🔍 Detective Agent analysis: spam_confidence={spam_confidence:.2f}")
+        # Check for insurance-related keywords to force detective agent
+        speech_lower = speech_result.lower()
+        insurance_keywords = ['insurance', 'policy', 'coverage', 'premium', 'claim', 'sell you', 'offer you']
+        if any(keyword in speech_lower for keyword in insurance_keywords):
+            logger.info(f"🎯 Insurance/Sales keyword detected: '{speech_result}' - Forcing Detective Agent")
+            spam_confidence = 0.8  # Force high confidence for insurance/sales calls
         
-        # If high confidence spam (>70%), reject the call
-        if spam_confidence > 0.7:
-            logger.info(f"🚨 Detective Agent CONFIRMED SPAM: {from_number} - '{speech_result}' (confidence: {spam_confidence:.2f})")
-            
-            # Post suspect information to RAG database
-            suspect_info = [
-                f"Confirmed spam call from {from_number}",
-                f"Caller statement: '{speech_result}'",
-                f"Confidence: {spam_confidence:.2f}",
-                f"Date: {datetime.now().isoformat()}"
-            ]
-            
-            await server_communicator.post_suspect_information(
-                suspect_info, 
-                {"phone_number": from_number, "source": "detective_agent", "confidence": spam_confidence}
-            )
-            
-            twiml_response = twilio_handler.reject_call("Thank you, we have all the information we need")
+        logger.info(f"🔍 Purpose analysis result: spam_confidence={spam_confidence:.2f}")
+        
+        # If very high confidence spam (>80%), reject immediately
+        if spam_confidence > 0.8 and 'insurance' not in speech_lower:
+            logger.info(f"🚨 HIGH CONFIDENCE SPAM DETECTED: {from_number} - '{speech_result}' (confidence: {spam_confidence:.2f})")
+            twiml_response = twilio_handler.reject_call("Thank you for your call. Goodbye.")
             return PlainTextResponse(content=twiml_response, media_type="text/xml")
         
-        # If medium confidence (30-70%), gather more information
-        elif spam_confidence > 0.3:
-            logger.info(f"🤔 Detective Agent gathering more info: {from_number} (confidence: {spam_confidence:.2f})")
-            
-            response = VoiceResponse()
-            response.say("I see. Can you tell me more about that?", voice="Polly.Joanna")
-            
-            gather = response.gather(
-                input='speech',
-                action='/webhook/voice-response',
-                speech_timeout='auto',
-                timeout=15
-            )
-            gather.say("Please provide more details about your request.", voice="Polly.Joanna")
-            
-            # If no response, end call
-            response.say("Thank you for calling. Goodbye!", voice="Polly.Joanna")
-            response.hangup()
-            
-            return PlainTextResponse(content=str(response), media_type="text/xml")
-        
-        # Low confidence (<30%), likely legitimate - forward the call
-        else:
-            logger.info(f"✅ Detective Agent: Likely legitimate caller {from_number} (confidence: {spam_confidence:.2f})")
-            
-            # Get the original target number (the actual user's number)
-            to_number = form_data.get('To')
-            
-            response = VoiceResponse()
-            response.say("Thank you for that information. I'll connect you now.", voice="Polly.Joanna")
-            
-            # Directly dial the target user's number
-            response.dial(to_number, timeout=30, caller_id=from_number)
-            
-            # If dial fails or times out
-            response.say("I wasn't able to connect your call. Please try again later.", voice="Polly.Joanna")
-            response.hangup()
-            
-            return PlainTextResponse(content=str(response), media_type="text/xml")
+        # Store the call purpose for Vapi to access later
+        call_purposes[from_number] = {
+            'purpose': speech_result,
+            'confidence': speech_confidence,
+            'spam_confidence': spam_confidence,
+            'timestamp': datetime.now().isoformat()
+        }
+        save_call_purposes(call_purposes)  # Persist to file
+        logger.info(f"📝 Stored call purpose for Vapi: '{speech_result}' from {from_number}")
     
-    # If no meaningful speech, ask again
+    # Now connect to Vapi Detective Agent
+    # Vapi will take over and can call our functions to get the stored purpose
+    logger.info("🔄 Connecting to Vapi Detective Agent")
+    
+    twiml_response = twilio_handler.connect_to_vapi_agent(form_data)
+    return PlainTextResponse(content=twiml_response, media_type="text/xml")
+
+@app.post("/webhook/detective-conversation")
+async def handle_detective_conversation(request: Request):
+    """Handle Detective Agent conversation - gather information from suspected scammers"""
+    form_data = await request.form()
+    
+    speech_result = form_data.get('SpeechResult', '')
+    from_number = form_data.get('From', '')
+    
+    logger.info(f"🕵️ Detective Agent conversation from {from_number}: '{speech_result}'")
+    
     response = VoiceResponse()
-    response.say("I'm sorry, I didn't understand that. Could you please repeat?", voice="Polly.Joanna")
     
-    gather = response.gather(
-        input='speech',
-        action='/webhook/voice-response',
-        speech_timeout='auto',
-        timeout=10
-    )
-    gather.say("Please tell me clearly what you need.", voice="Polly.Joanna")
-    
-    response.say("I'm having trouble hearing you. Please try calling back. Goodbye!", voice="Polly.Joanna")
-    response.hangup()
+    if speech_result and len(speech_result.strip()) > 2:
+        # Store the conversation
+        if from_number in call_purposes:
+            if 'conversation' not in call_purposes[from_number]:
+                call_purposes[from_number]['conversation'] = []
+            call_purposes[from_number]['conversation'].append({
+                'timestamp': datetime.now().isoformat(),
+                'speech': speech_result
+            })
+            save_call_purposes(call_purposes)
+        
+        # Detective Agent responses - act interested to gather more info
+        responses = [
+            "That's very interesting! Tell me more about that.",
+            "I see. Can you give me more details about your company?",
+            "That sounds great! What kind of rates are you offering?",
+            "Fascinating! How long have you been in this business?",
+            "I'm definitely interested. What information do you need from me?",
+            "That's exactly what I've been looking for! Can you tell me more?"
+        ]
+        
+        import random
+        detective_response = random.choice(responses)
+        response.say(detective_response, voice="Polly.Joanna")
+        
+        # Continue gathering information
+        gather = response.gather(
+            input='speech',
+            action='/webhook/detective-conversation',
+            speech_timeout='auto',
+            timeout=30
+        )
+        gather.say("I'm listening.", voice="Polly.Joanna")
+        
+        # After 5 exchanges, start wrapping up
+        conversation_count = len(call_purposes.get(from_number, {}).get('conversation', []))
+        if conversation_count >= 5:
+            response.say("Thank you so much for all this information. I need to discuss this with my spouse. Can I call you back?", voice="Polly.Joanna")
+            response.hangup()
+    else:
+        response.say("I'm sorry, I didn't catch that. Could you repeat what you said?", voice="Polly.Joanna")
+        
+        gather = response.gather(
+            input='speech',
+            action='/webhook/detective-conversation',
+            speech_timeout='auto',
+            timeout=15
+        )
+        gather.say("Please speak clearly.", voice="Polly.Joanna")
+        
+        response.say("I'm having trouble hearing you. Please try calling back later.", voice="Polly.Joanna")
+        response.hangup()
     
     return PlainTextResponse(content=str(response), media_type="text/xml")
 
@@ -251,12 +301,49 @@ async def post_suspect_information(request: Request):
     
     return await server_communicator.post_suspect_information(texts, metadata)
 
+@app.post("/api/agent/get_call_purpose")
+async def get_call_purpose(request: Request):
+    """Get the stored call purpose for a phone number"""
+    data = await request.json()
+    phone_number = data.get('phone_number', '')
+    
+    if phone_number in call_purposes:
+        purpose_data = call_purposes[phone_number]
+        logger.info(f"📋 Vapi requested call purpose for {phone_number}: '{purpose_data['purpose']}'")
+        return {
+            "success": True,
+            "phone_number": phone_number,
+            "purpose": purpose_data['purpose'],
+            "confidence": purpose_data['confidence'],
+            "spam_confidence": purpose_data['spam_confidence'],
+            "timestamp": purpose_data['timestamp']
+        }
+    else:
+        logger.info(f"❓ No stored call purpose found for {phone_number}")
+        return {
+            "success": False,
+            "phone_number": phone_number,
+            "message": "No call purpose found for this number"
+        }
+
 @app.post("/api/agent/analyze_call_purpose")
 async def analyze_call_purpose(request: Request):
-    """Analyze caller's stated purpose using ML model"""
+    """Analyze caller's stated purpose using ML model - matches your existing Vapi function"""
     data = await request.json()
     call_purpose = data.get('call_purpose', '')
-    phone_number = data.get('phone_number', 'Unknown')
+    
+    # Get caller info from the current call context (Vapi should provide this)
+    # For now, we'll extract from the stored call purposes or use a default
+    phone_number = 'Unknown'
+    
+    # Try to find the phone number from our stored call purposes
+    # This is a simple approach - in production you might want a more robust solution
+    for stored_number, stored_data in call_purposes.items():
+        if stored_data['purpose'].lower() in call_purpose.lower() or call_purpose.lower() in stored_data['purpose'].lower():
+            phone_number = stored_number
+            break
+    
+    logger.info(f"🔍 Analyzing call purpose: '{call_purpose}' for {phone_number}")
     
     # Create proper JSON payload for Layer 2 analysis
     call_data = {
@@ -278,8 +365,7 @@ async def analyze_call_purpose(request: Request):
         "confidence": layer2_result.get('confidence', 0.0),
         "reason": layer2_result.get('reason', 'Analysis complete'),
         "call_purpose": call_purpose,
-        "layer": layer2_result.get('layer', 2),
-        "method": layer2_result.get('method', 'ml_analysis')
+        "phone_number": phone_number
     }
 
 @app.post("/")
@@ -295,25 +381,30 @@ async def handle_root_post(request: Request):
     
     logger.info(f"📞 Vapi call: {from_number} -> {to_number} (SID: {call_sid})")
     
-    # Layer 1: Check spam database
+    # Layer 1: Check spam database (binary result)
     layer1_result = await server_communicator.layer1_spam_check(from_number, to_number, form_data)
     
-    # Check if Layer 1 detected spam and the result is reliable
-    if (layer1_result.get('is_spam', False) and 
-        layer1_result.get('confidence', 0.0) > 0.5 and
-        layer1_result.get('layer') == 1):
-        logger.info(f"🚨 Layer 1 SPAM DETECTED: {from_number} (confidence: {layer1_result.get('confidence', 0.0)})")
-        twiml_response = twilio_handler.reject_call("Spam detected")
+    # Layer 1 returns binary results: if spam detected, reject immediately
+    if layer1_result.get('is_spam', False):
+        logger.info(f"🚨 Layer 1 SPAM DETECTED: {from_number} - Known spam number in database")
+        twiml_response = twilio_handler.reject_call("Known spam number")
         return PlainTextResponse(content=twiml_response, media_type="text/xml")
     
-    # Layer 1 passed or failed - forward to Vapi agent
-    if layer1_result.get('is_spam', False):
-        logger.warning(f"⚠️ Layer 1 detected potential spam but confidence too low: {from_number}")
-    else:
-        logger.info(f"✅ Layer 1 passed: {from_number}")
+    # Layer 1 passed - proceed with Layer 2 analysis
+    logger.info(f"✅ Layer 1 passed: {from_number} - Not in spam database")
     
-    logger.info(f"➡️ Forwarding to Vapi agent: {from_number}")
-    twiml_response = twilio_handler.forward_to_vapi(form_data)
+    # Layer 2: ML model analysis
+    layer2_result = await server_communicator.layer2_ml_check(from_number, to_number, form_data)
+    layer2_conf = layer2_result.get('confidence', 0.0) if layer2_result.get('is_spam', False) else 0.0
+    
+    # Route based on Layer 2 confidence
+    if layer2_conf >= 0.5:
+        logger.info(f"🕵️ Layer 2 detected potential spam ({layer2_conf:.2f}) - Forwarding to Detective Agent")
+        twiml_response = twilio_handler.forward_to_vapi(form_data)
+    else:
+        logger.info(f"✅ Low spam confidence ({layer2_conf:.2f}) - Forwarding normally")
+        twiml_response = twilio_handler.forward_call_normally(form_data)
+    
     return PlainTextResponse(content=twiml_response, media_type="text/xml")
 
 @app.get("/", response_class=HTMLResponse)

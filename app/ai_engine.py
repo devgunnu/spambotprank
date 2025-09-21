@@ -55,7 +55,7 @@ class ServerCommunicator:
             response = requests.post(
                 f"{self.layer1_server_url}/check_spam",
                 json=payload,
-                timeout=5
+                timeout=10  # Increased timeout for better reliability
             )
             
             if response.status_code == 200:
@@ -64,9 +64,18 @@ class ServerCommunicator:
                 logger.error(f"Layer 1 server error: {response.status_code} - {response.text}")
                 return {"is_spam": False, "reason": "Layer 1 server error", "confidence": 0.0, "layer": 1}
                 
+        except requests.Timeout as e:
+            logger.error(f"Layer 1 timeout error: {e}")
+            return {"is_spam": False, "reason": "Layer 1 timeout", "confidence": 0.0, "layer": 1}
+        except requests.ConnectionError as e:
+            logger.error(f"Layer 1 connection error: {e}")
+            return {"is_spam": False, "reason": "Layer 1 connection failed", "confidence": 0.0, "layer": 1}
         except requests.RequestException as e:
             logger.error(f"Layer 1 communication error: {e}")
             return {"is_spam": False, "reason": "Layer 1 communication failed", "confidence": 0.0, "layer": 1}
+        except Exception as e:
+            logger.error(f"Layer 1 unexpected error: {e}")
+            return {"is_spam": False, "reason": "Layer 1 unexpected error", "confidence": 0.0, "layer": 1}
     
     async def layer2_ml_check(self, from_number: str, to_number: str, call_data: Union[Dict, FormData]) -> Dict:
         """Layer 2: ML model check"""
@@ -74,9 +83,9 @@ class ServerCommunicator:
             # Extract and format Twilio data properly
             payload = self._extract_twilio_data(call_data, from_number, to_number)
             
-            # Add default threshold if not provided
+            # Add default threshold if not provided (Layer 2 uses this for stochastic analysis)
             if 'threshold' not in payload:
-                payload['threshold'] = 0.5
+                payload['threshold'] = 0.5  # Base threshold for ML model
             
             response = requests.post(
                 f"{self.layer2_server_url}/ml_check_spam",
@@ -85,14 +94,27 @@ class ServerCommunicator:
             )
             
             if response.status_code == 200:
-                return response.json()
+                result = response.json()
+                # Layer 2 returns complex stochastic results - log details for debugging
+                if 'details' in result:
+                    logger.debug(f"Layer 2 detailed analysis: {result['details']}")
+                return result
             else:
                 logger.error(f"Layer 2 server error: {response.status_code} - {response.text}")
                 return {"is_spam": False, "reason": "Layer 2 server error", "confidence": 0.0, "layer": 2}
                 
+        except requests.Timeout as e:
+            logger.error(f"Layer 2 timeout error: {e}")
+            return {"is_spam": False, "reason": "Layer 2 timeout", "confidence": 0.0, "layer": 2}
+        except requests.ConnectionError as e:
+            logger.error(f"Layer 2 connection error: {e}")
+            return {"is_spam": False, "reason": "Layer 2 connection failed", "confidence": 0.0, "layer": 2}
         except requests.RequestException as e:
             logger.error(f"Layer 2 communication error: {e}")
             return {"is_spam": False, "reason": "Layer 2 communication failed", "confidence": 0.0, "layer": 2}
+        except Exception as e:
+            logger.error(f"Layer 2 unexpected error: {e}")
+            return {"is_spam": False, "reason": "Layer 2 unexpected error", "confidence": 0.0, "layer": 2}
     
     async def get_user_information(self, query: str) -> Dict:
         """Get user information from RAG database"""
