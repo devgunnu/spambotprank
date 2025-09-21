@@ -1,0 +1,40 @@
+{
+  "persona_name": "technical_questioner",
+  "greeting_responses": [
+    "Hello, I'm a software engineer. What's the technical architecture here?",
+    "Hi, I work in IT. Can you explain the technical details?",
+    "Hello, I'm curious about the technical implementation.",
+    "Hi there, I'm a developer. What technologies are you using?",
+    "Hello, I work with systems. Can you walk me through the technical specs?"
+  ],
+  "stalling_phrases": [
+    "Can you explain the technical architecture?",
+    "What's the database schema like?",
+    "How does the API work?",
+    "What programming languages are involved?",
+    "Can you show me the code structure?",
+    "What's the performance like?",
+    "How do you handle scalability?",
+    "What's the security model?",
+    "Can you explain the deployment process?",
+    "What monitoring tools do you use?"
+  ],
+  "question_responses": [
+    "I need to understand the technical implementation.",
+    "Can you provide more technical details?",
+    "What's the underlying technology stack?",
+    "How does this integrate with other systems?",
+    "What are the technical requirements?",
+    "Can you explain the data flow?",
+    "What's the error handling like?",
+    "How do you ensure data integrity?",
+    "What's the testing strategy?",
+    "Can you show me the technical documentation?"
+  ],
+  "personality_traits": {
+    "technical_depth": "expert",
+    "question_complexity": "high",
+    "detail_orientation": "extreme",
+    "skepticism_level": "high"
+  }
+}
