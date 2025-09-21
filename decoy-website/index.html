@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decoy - Your Shield Against Scams</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-shield-alt"></i>
+                <span>Decoy</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#chatbot" class="nav-link">AI Scanner</a>
+                <a href="#map" class="nav-link">Scam Map</a>
+                <a href="#about" class="nav-link">About</a>
+            </div>
+            <div class="nav-toggle">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Your Ultimate <span class="highlight">Shield</span> Against Scams
+                </h1>
+                <p class="hero-subtitle">
+                    AI-powered scam detection, real-time global threat intelligence, and instant protection for emails, texts, and suspicious content.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary" onclick="scrollToSection('chatbot')">
+                        <i class="fas fa-robot"></i>
+                        Try AI Scanner
+                    </button>
+                    <button class="btn btn-secondary" onclick="scrollToSection('map')">
+                        <i class="fas fa-globe"></i>
+                        View Scam Map
+                    </button>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="shield-container">
+                    <div class="shield-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="protection-rings">
+                        <div class="ring ring-1"></div>
+                        <div class="ring ring-2"></div>
+                        <div class="ring ring-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Comprehensive Scam Protection</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>AI-Powered Analysis</h3>
+                    <p>Advanced machine learning algorithms analyze text, images, and patterns to detect sophisticated scams with 99% accuracy.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <h3>Screenshot Scanner</h3>
+                    <p>Upload screenshots of suspicious emails, texts, or websites for instant AI-powered scam detection and analysis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe-americas"></i>
+                    </div>
+                    <h3>Global Threat Map</h3>
+                    <p>Real-time visualization of scam activities worldwide, helping you stay informed about emerging threats in your region.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Chatbot Section -->
+    <section id="chatbot" class="chatbot-section">
+        <div class="container">
+            <h2 class="section-title">AI Scam Scanner</h2>
+            <div class="chatbot-container">
+                <div class="chat-header">
+                    <div class="chat-status">
+                        <div class="status-dot"></div>
+                        <span>AI Assistant Online</span>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="btn-icon" onclick="clearChat()">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot-message">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <p>Hello! I'm your AI scam detection assistant. You can:</p>
+                            <ul>
+                                <li>Upload screenshots of suspicious emails or texts</li>
+                                <li>Paste suspicious text content</li>
+                                <li>Ask questions about potential scams</li>
+                            </ul>
+                            <p>How can I help protect you today?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <div class="upload-placeholder">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Drop screenshot here or click to upload</span>
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="messageInput" placeholder="Describe the suspicious content or ask a question...">
+                        <button id="sendButton" class="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- World Map Section -->
+    <section id="map" class="map-section">
+        <div class="container">
+            <h2 class="section-title">Global Scam Intelligence</h2>
+            <div class="map-controls">
+                <div class="map-filters">
+                    <button class="filter-btn active" data-filter="all">All Scams</button>
+                    <button class="filter-btn" data-filter="phishing">Phishing</button>
+                    <button class="filter-btn" data-filter="romance">Romance</button>
+                    <button class="filter-btn" data-filter="investment">Investment</button>
+                    <button class="filter-btn" data-filter="tech">Tech Support</button>
+                </div>
+                <div class="map-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalScams">0</span>
+                        <span class="stat-label">Total Reports</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="countriesAffected">0</span>
+                        <span class="stat-label">Countries</span>
+                    </div>
+                </div>
+            </div>
+            <div class="map-container">
+                <div id="worldMap" class="world-map"></div>
+                <div class="map-legend">
+                    <h4>Threat Level</h4>
+                    <div class="legend-item">
+                        <div class="legend-color low"></div>
+                        <span>Low (1-100)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color medium"></div>
+                        <span>Medium (101-500)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color high"></div>
+                        <span>High (501-1000)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color critical"></div>
+                        <span>Critical (1000+)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Travel Safety Section -->
+    <section id="travel-safety" class="travel-safety">
+        <div class="container">
+            <h2 class="section-title">Travel Scam Alerts</h2>
+            <p class="section-subtitle">Stay protected from local and online scams while traveling worldwide</p>
+            
+            <div class="travel-search">
+                <div class="search-container">
+                    <div class="search-input-group">
+                        <i class="fas fa-map-marker-alt search-icon"></i>
+                        <input type="text" id="countrySearch" placeholder="Enter destination country..." class="country-input">
+                        <button id="searchButton" class="search-btn">
+                            <i class="fas fa-search"></i>
+                            Search
+                        </button>
+                    </div>
+                    <div class="popular-destinations">
+                        <span>Popular destinations:</span>
+                        <button class="destination-tag" data-country="Thailand">Thailand</button>
+                        <button class="destination-tag" data-country="India">India</button>
+                        <button class="destination-tag" data-country="Mexico">Mexico</button>
+                        <button class="destination-tag" data-country="Turkey">Turkey</button>
+                        <button class="destination-tag" data-country="Egypt">Egypt</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="travelResults" class="travel-results" style="display: none;">
+                <div class="results-header">
+                    <h3 id="selectedCountry">Country Scam Profile</h3>
+                    <div class="threat-badge" id="threatLevel">
+                        <span class="threat-text">Threat Level: Medium</span>
+                    </div>
+                </div>
+                
+                <div class="scam-categories">
+                    <div class="scam-category">
+                        <div class="category-header">
+                            <i class="fas fa-store"></i>
+                            <h4>Local Street Scams</h4>
+                        </div>
+                        <div class="scam-list" id="localScams">
+                            <!-- Local scams will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="scam-category">
+                        <div class="category-header">
+                            <i class="fas fa-wifi"></i>
+                            <h4>Online & Digital Scams</h4>
+                        </div>
+                        <div class="scam-list" id="onlineScams">
+                            <!-- Online scams will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="scam-category">
+                        <div class="category-header">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h4>Tourist-Specific Scams</h4>
+                        </div>
+                        <div class="scam-list" id="touristScams">
+                            <!-- Tourist scams will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="safety-tips">
+                    <h4><i class="fas fa-lightbulb"></i> Safety Tips for This Destination</h4>
+                    <div id="safetyTipsList" class="tips-list">
+                        <!-- Safety tips will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="travel-features">
+                <div class="travel-feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3>200+ Countries</h3>
+                    <p>Comprehensive scam database covering destinations worldwide</p>
+                </div>
+                
+                <div class="travel-feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Real-Time Updates</h3>
+                    <p>Latest scam alerts and emerging threats updated daily</p>
+                </div>
+                
+                <div class="travel-feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Local Insights</h3>
+                    <p>Street-level scam awareness from local authorities and travelers</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>About Decoy</h2>
+                    <p class="about-description">
+                        Decoy is an educational tool that helps users identify potential scams using AI-powered analysis and 
+                        real data from official government sources. Our platform combines OpenAI's advanced language models 
+                        with curated threat intelligence from law enforcement agencies worldwide.
+                    </p>
+                    <div class="about-features">
+                        <div class="about-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>OpenAI GPT-4 Integration</span>
+                        </div>
+                        <div class="about-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Official Data Sources</span>
+                        </div>
+                        <div class="about-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Educational Purpose</span>
+                        </div>
+                        <div class="about-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Transparent Attribution</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-visual">
+                    <div class="stats-container">
+                        <div class="stat-box">
+                            <h3>AI-Powered</h3>
+                            <p>Advanced Detection</p>
+                        </div>
+                        <div class="stat-box">
+                            <h3>Real-Time</h3>
+                            <p>Threat Intelligence</p>
+                        </div>
+                        <div class="stat-box">
+                            <h3>Open Source</h3>
+                            <p>Data Transparency</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- How Decoy Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How Decoy Works</h2>
+            <p class="section-subtitle">Our four-step process to trap scammers and protect victims</p>
+            
+            <div class="process-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <h3>Suspicious Call Detected</h3>
+                    <p>Our system identifies potential scam calls and texts using advanced pattern recognition.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Redirected to Decoy Persona</h3>
+                    <p>Scammers are automatically redirected to interact with our AI-powered fake personas.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>Persona Engages Scammer</h3>
+                    <p>Our personas keep scammers busy with realistic but fake responses, wasting their time.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h3>Evidence Log Generated</h3>
+                    <p>All interactions are logged and analyzed to help authorities track and prosecute scammers.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Decoy</span>
+                    </div>
+                    <p>Protecting you from scams with advanced AI technology and global intelligence.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Features</h4>
+                    <ul>
+                        <li><a href="#chatbot">AI Scanner</a></li>
+                        <li><a href="#map">Scam Map</a></li>
+                        <li><a href="#features">Protection</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                        <li><a href="#privacy">Privacy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Decoy. All rights reserved. Stay safe online.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- API Key Modal -->
+    <div id="apiKeyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Configure OpenAI API Key</h3>
+                <span class="close" onclick="closeApiModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Please enter your OpenAI API key to enable the AI scam detection feature:</p>
+                <input type="password" id="apiKeyInput" placeholder="sk-...">
+                <div class="modal-note">
+                    <i class="fas fa-lock"></i>
+                    <span>Your API key is stored securely in your browser and never sent to our servers.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeApiModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveApiKey()">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="script.js"></script>
+</body>
+</html>
