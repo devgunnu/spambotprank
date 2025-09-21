@@ -5,9 +5,8 @@ from fastapi.templating import Jinja2Templates
 import uvicorn
 import os
 from dotenv import load_dotenv
-from .database import init_db, get_db
 from .twilio_handler import TwilioHandler
-from .analytics import AnalyticsService
+from .ai_engine import ServerCommunicator
 import logging
 from contextlib import asynccontextmanager
 
@@ -20,13 +19,12 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    await init_db()
-    logger.info("Database initialized")
+    logger.info("Spam Detection Gateway starting up...")
     yield
     # Shutdown
-    logger.info("Application shutting down")
+    logger.info("Spam Detection Gateway shutting down")
 
-app = FastAPI(title="Spam Call Time-Waster", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Spam Detection Gateway", version="2.0.0", lifespan=lifespan)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -34,25 +32,39 @@ templates = Jinja2Templates(directory="static")
 
 # Initialize services
 twilio_handler = TwilioHandler()
-analytics_service = AnalyticsService()
+server_communicator = ServerCommunicator()
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "spam-call-waster"}
+    return {"status": "healthy", "service": "spam-detection-gateway"}
 
 @app.post("/webhook/voice")
 async def handle_incoming_call(request: Request):
-    """Handle incoming Twilio voice webhook"""
+    """Main spam detection gateway - receives Twilio calls and routes them"""
     form_data = await request.form()
-    twiml_response = await twilio_handler.handle_incoming_call(form_data)
-    return Response(content=twiml_response, media_type="text/xml")
-
-@app.post("/webhook/speech")
-async def handle_speech(request: Request):
-    """Handle speech recognition results"""
-    form_data = await request.form()
-    twiml_response = await twilio_handler.handle_speech_result(form_data)
-    return Response(content=twiml_response, media_type="text/xml")
+    
+    # Extract call information
+    from_number = form_data.get('From')
+    to_number = form_data.get('To')
+    call_sid = form_data.get('CallSid')
+    
+    logger.info(f"📞 Incoming call: {from_number} -> {to_number} (SID: {call_sid})")
+    
+    # Layer 1: Check spam database
+    layer1_result = await server_communicator.layer1_spam_check(from_number, to_number, form_data)
+    if layer1_result['is_spam']:
+        logger.info(f"🚨 Layer 1 SPAM DETECTED: {from_number}")
+        return twilio_handler.reject_call("Spam detected")
+    
+    # Layer 2: ML model check
+    layer2_result = await server_communicator.layer2_ml_check(from_number, to_number, form_data)
+    if layer2_result['is_spam']:
+        logger.info(f"🚨 Layer 2 SPAM DETECTED: {from_number}")
+        return twilio_handler.reject_call("Suspicious call pattern detected")
+    
+    # Not spam - forward to Vapi agent
+    logger.info(f"✅ Call approved: {from_number} -> Forwarding to Vapi")
+    return twilio_handler.forward_to_vapi(form_data)
 
 @app.post("/webhook/status")
 async def handle_call_status(request: Request):
@@ -60,25 +72,27 @@ async def handle_call_status(request: Request):
     form_data = await request.form()
     return await twilio_handler.handle_call_status(form_data)
 
+# Agent Functions - These will be called by Vapi agent
+@app.get("/api/agent/get_user_information")
+async def get_user_information(query: str):
+    """Get user information from RAG database"""
+    return await server_communicator.get_user_information(query)
+
+@app.get("/api/agent/get_call_history")
+async def get_call_history(query: str):
+    """Get call history from RAG database"""
+    return await server_communicator.get_call_history(query)
+
+@app.post("/api/agent/post_suspect_information")
+async def post_suspect_information(request: Request):
+    """Post suspect information to RAG database"""
+    data = await request.json()
+    return await server_communicator.post_suspect_information(data['texts'])
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    """Serve analytics dashboard"""
+    """Serve spam detection dashboard"""
     return templates.TemplateResponse("dashboard.html", {"request": request})
-
-@app.get("/api/analytics/summary")
-async def get_analytics_summary():
-    """Get analytics summary for dashboard"""
-    return await analytics_service.get_summary()
-
-@app.get("/api/calls")
-async def get_recent_calls():
-    """Get recent calls list"""
-    return await analytics_service.get_recent_calls()
-
-@app.get("/api/calls/{call_id}")
-async def get_call_details(call_id: str):
-    """Get specific call details"""
-    return await analytics_service.get_call_details(call_id)
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

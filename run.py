@@ -30,9 +30,10 @@ if __name__ == "__main__":
         print("\nPlease set these in your .env file before running the application.")
         exit(1)
     
-    print("🎭 Starting Spam Call Time-Waster...")
+    print("🎭 Starting Spam Detection Gateway...")
     print("📊 Dashboard will be available at: http://localhost:8000")
     print("🔗 Make sure your ngrok tunnel is running and webhooks are configured!")
+    print("🤖 Spam calls will be forwarded to Vapi agent")
     print("=" * 60)
     
     uvicorn.run(
