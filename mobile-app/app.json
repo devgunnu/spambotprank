@@ -29,14 +29,9 @@
         "READ_PHONE_STATE",
         "CALL_PHONE",
         "ANSWER_PHONE_CALLS",
-        "MANAGE_OWN_CALLS",
-        "RECORD_AUDIO",
-        "MODIFY_AUDIO_SETTINGS",
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "WAKE_LOCK",
-        "FOREGROUND_SERVICE"
-      ]
+        "MANAGE_OWN_CALLS"
+      ],
+      "package": "com.ashworks.mobileapp"
     },
     "web": {
       "output": "static",
@@ -60,6 +55,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7988defc-43e9-4e1c-adfe-7e3971738acb"
+      }
     }
   }
 }
