@@ -1,0 +1,85 @@
+{
+  "functions": [
+    {
+      "name": "get_user_information",
+      "description": "Search for user information in the RAG database. Use this to find details about the caller or user being discussed.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query to find relevant user information. Examples: 'John Smith contact info', 'user preferences', 'account details'"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "get_call_history",
+      "description": "Search for call history and previous interactions. Use this to find information about past calls or communication history.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query to find relevant call history. Examples: 'calls from this number', 'previous complaints', 'interaction history'"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "post_suspect_information",
+      "description": "Report suspect information or scammer details to the database. Use this when you've gathered information about a potential scammer or suspicious caller.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "texts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of text snippets containing suspect information. Examples: ['Caller claimed to be from IRS', 'Asked for social security number', 'Threatened legal action']"
+          }
+        },
+        "required": ["texts"]
+      }
+    },
+    {
+      "name": "analyze_call_purpose",
+      "description": "Analyze the caller's stated purpose using ML model to detect if it's spam. Use this immediately after asking 'What's the purpose of this call?' and getting their response.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "call_purpose": {
+            "type": "string",
+            "description": "The exact text of what the caller said when asked about their call purpose. This will be analyzed by the ML model."
+          }
+        },
+        "required": ["call_purpose"]
+      }
+    }
+  ],
+  "server_url": "https://your-ngrok-url.ngrok-free.app",
+  "endpoints": {
+    "get_user_information": "/api/agent/get_user_information",
+    "get_call_history": "/api/agent/get_call_history", 
+    "post_suspect_information": "/api/agent/post_suspect_information",
+    "analyze_call_purpose": "/api/agent/analyze_call_purpose"
+  },
+  "instructions": {
+    "setup": [
+      "1. Copy each function definition above",
+      "2. In your Vapi dashboard, go to Functions/Tools section",
+      "3. Add each function with the exact name and parameters shown",
+      "4. Set the server URL to your ngrok tunnel URL",
+      "5. Use the endpoint paths shown in the endpoints section"
+    ],
+    "usage": [
+      "Use get_user_information when caller mentions specific people or accounts",
+      "Use get_call_history when you need context about previous interactions", 
+      "Use post_suspect_information when you've identified scammer behavior or gathered intel",
+      "Always be conversational - these functions work in the background"
+    ]
+  }
+}
