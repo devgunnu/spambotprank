@@ -2,6 +2,9 @@
 
 **Decoy flips the script on scams.** Instead of just blocking calls, it wastes scammers’ time while protecting and educating users worldwide.
 
+<img width="2100" height="782" alt="image" src="https://github.com/user-attachments/assets/49a6df5a-f92b-484f-bef9-08b905820e89" />
+
+
 ---
 
 ## 🚀 Features
